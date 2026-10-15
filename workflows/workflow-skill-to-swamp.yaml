@@ -1,0 +1,102 @@
+id: 9ad723ff-a152-4681-b303-d761b7d66325
+name: "@keeb/skill-to-swamp"
+description: >-
+  Convert a Claude Code skill into swamp automation: parse the SKILL.md,
+  find registry extensions for the services it uses, have Claude plan the
+  conversion (via the local claude CLI), then write the workflow and
+  extension scaffolds into the repo and optionally pull the extensions.
+version: 1
+inputs:
+  properties:
+    skillPath:
+      type: string
+      description: Path to a SKILL.md file or a skill directory (absolute or relative to the repo)
+    collective:
+      type: string
+      description: Collective new model types are scaffolded under (e.g. acme → @acme/postgres)
+    converter:
+      type: string
+      default: skill-converter
+      description: Name of the @keeb/skill-converter instance (holds the parsed skill, catalog, and plan)
+    guidance:
+      type: string
+      default: ""
+      description: Extra instructions for the planner (scope, naming, constraints)
+    extraQueries:
+      type: array
+      items:
+        type: string
+      default: []
+      description: Additional registry search queries
+    install:
+      type: boolean
+      default: false
+      description: Run swamp extension pull for every extension the plan uses
+    overwrite:
+      type: boolean
+      default: false
+      description: Replace existing scaffold files
+  required:
+    - skillPath
+    - collective
+jobs:
+  - name: convert
+    description: parse → discover → plan → apply on one converter instance
+    steps:
+      - name: parse
+        description: Read the skill and extract its structure
+        task:
+          type: model_method
+          modelType: "@keeb/skill-converter"
+          modelName: ${{ inputs.converter }}
+          methodName: parse
+          globalArgs:
+            collective: ${{ inputs.collective }}
+          inputs:
+            path: ${{ inputs.skillPath }}
+      - name: discover
+        description: Search the registry for extensions covering the skill's services
+        dependsOn:
+          - step: parse
+            condition:
+              type: succeeded
+        task:
+          type: model_method
+          modelType: "@keeb/skill-converter"
+          modelName: ${{ inputs.converter }}
+          methodName: discover
+          globalArgs:
+            collective: ${{ inputs.collective }}
+          inputs:
+            extraQueries: ${{ inputs.extraQueries }}
+      - name: plan
+        description: Have Claude produce and validate a conversion plan
+        dependsOn:
+          - step: discover
+            condition:
+              type: succeeded
+        task:
+          type: model_method
+          modelType: "@keeb/skill-converter"
+          modelName: ${{ inputs.converter }}
+          methodName: plan
+          globalArgs:
+            collective: ${{ inputs.collective }}
+          inputs:
+            guidance: ${{ inputs.guidance }}
+      - name: apply
+        description: Write the workflow and scaffolds; pull extensions when install is true
+        dependsOn:
+          - step: plan
+            condition:
+              type: succeeded
+        task:
+          type: model_method
+          modelType: "@keeb/skill-converter"
+          modelName: ${{ inputs.converter }}
+          methodName: apply
+          globalArgs:
+            collective: ${{ inputs.collective }}
+          inputs:
+            install: ${{ inputs.install }}
+            overwrite: ${{ inputs.overwrite }}
