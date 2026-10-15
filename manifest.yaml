@@ -1,6 +1,6 @@
 manifestVersion: 1
 name: "@keeb/skill-converter"
-version: "2026.10.15.1"
+version: "2026.10.15.2"
 description: "Convert Claude Code skills into swamp workflows: finds registry extensions for the services a skill uses, has Claude plan the conversion, then writes the workflow, scaffolds missing extension models, and optionally pulls the extensions."
 repository: https://github.com/keeb/swamp-skill-converter
 labels:

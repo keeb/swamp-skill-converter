@@ -282,8 +282,15 @@ async function existingWorkflowId(path: string): Promise<string | null> {
 /** Swamp extension model definition for converting Claude Code skills into swamp workflows and extensions. */
 export const model = {
   type: "@keeb/skill-converter",
-  version: "2026.10.15.1",
+  version: "2026.10.15.2",
   globalArguments: GlobalArgsSchema,
+  upgrades: [
+    {
+      toVersion: "2026.10.15.2",
+      description: "Prompt and documentation wording; no schema changes",
+      upgradeAttributes: (old: Record<string, unknown>) => old,
+    },
+  ],
   resources: {
     skill: {
       description:
